@@ -2,11 +2,13 @@ import express, { json, urlencoded } from "express";
 import path from "path";
 import dotenv from "dotenv";
 import { connectDB } from "./lib/db.js";
+import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.route.js";
 
 dotenv.config();
 const app = express();
 
+app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 app.use(json());
 
