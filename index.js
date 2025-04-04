@@ -1,7 +1,8 @@
 import express, { json, urlencoded } from "express";
 import path from "path";
-import dotenv, { config } from "dotenv";
+import dotenv from "dotenv";
 import { connectDB } from "./lib/db.js";
+import authRouter from "./routes/auth.route.js";
 
 dotenv.config();
 const app = express();
@@ -12,9 +13,9 @@ app.use(json());
 connectDB();
 
 /*route for messages and route for auth*/
-app.use("/auth", () => console.log("index/auth"));
+app.use("/auth", authRouter);
 app.use("/message", () => console.log("index/message"));
 
-app.listen(process.env.ENV_PORT || 3000, () => {
+app.listen(process.env.ENV_PORT || 3030, () => {
   console.log(`server running at port ${process.env.ENV_PORT}`);
 });
