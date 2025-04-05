@@ -3,10 +3,12 @@ import mongoose from "mongoose";
 const messageSchema = mongoose.Schema({
   senderID: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   receiverID: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   test: {
@@ -17,6 +19,6 @@ const messageSchema = mongoose.Schema({
   },
 });
 
-const message = mongoose.model("message", messageSchema);
+const Message = mongoose.model("message", messageSchema);
 
-module.exports = message;
+export default Message;
