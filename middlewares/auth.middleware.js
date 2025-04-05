@@ -7,9 +7,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const protectRoute = (req, res, next) => {
+export const protectRoute = async (req, res, next) => {
   try {
-    const token = req.cookie?.jwt;
+    const token = req.cookies?.jwt;
     if (!token) {
       return res
         .status(401)
@@ -23,7 +23,7 @@ export const protectRoute = (req, res, next) => {
         .json({ message: " Unauthonrized - Incorrect Token" });
     }
 
-    const user = User.findById(decoded.userId).select("-password");
+    const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
       return res.status(401).json({ message: "Unauthorized - no user found" });
@@ -32,7 +32,7 @@ export const protectRoute = (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    if (process.env.NODE_ENV === "development") console.log(err);
+    return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
