@@ -95,7 +95,6 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const image = req.file;
-    console.log(image);
     if (!image) {
       return res
         .status(400)
