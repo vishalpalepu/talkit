@@ -10,15 +10,19 @@ export const getAllUsers = async (req, res) => {
       _id: { $ne: loggedInUser._id },
     }).select("-password");
     if (allFilteredUsers.length === 0) {
-      return res.status(404).json({ message: "No User Found" });
+      return res.status(404).json({ success: false, message: "No User Found" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "All user details retrieved ", allFilteredUsers });
+    return res.status(200).json({
+      success: true,
+      message: "All user details retrieved ",
+      allFilteredUsers,
+    });
   } catch (err) {
     if (process.env.NODE_ENV === "development") console.log(err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -45,15 +49,19 @@ export const getAllMessages = async (req, res) => {
     });
 
     if (messages.length === 0) {
-      return res.status(404).json({ message: "New to the talkit " });
+      return res
+        .status(404)
+        .json({ success: true, message: "New to the talkit " });
     }
 
     return res
       .status(200)
-      .json({ message: "All messages retrieved", messages });
+      .json({ success: true, message: "All messages retrieved", messages });
   } catch (err) {
     if (process.env.NODE_ENV === "development") console.log(err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -79,9 +87,13 @@ export const sendMessage = async (req, res) => {
 
     await message.save();
 
-    res.status(201).json({ message: "message Sent successfully" });
+    res
+      .status(201)
+      .json({ success: true, message: "message Sent successfully" });
   } catch (err) {
     if (process.env.NODE_ENV === "development") console.log(err);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
