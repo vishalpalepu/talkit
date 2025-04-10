@@ -5,6 +5,7 @@ import { connectDB } from "./lib/db.js";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.route.js";
 import messsageRouter from "./routes/message.route.js";
+import cors from "cors";
 
 dotenv.config();
 const app = express();
@@ -12,6 +13,12 @@ const app = express();
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 app.use(json());
+app.use(
+  cors({
+    origin: ["*", "http://localhost:3000"], // or wherever your frontend runs
+    credentials: true,
+  })
+);
 
 connectDB();
 
