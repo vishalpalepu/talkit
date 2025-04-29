@@ -5,7 +5,10 @@ import cloudinary from "../lib/cloudinary.js";
 import multer from "multer";
 
 const storage = multer.memoryStorage();
-export const upload = multer({ storage: storage });
+// Configure multer
+export const upload = multer({
+  storage: storage,
+});
 
 // register connection done (not yet)
 export const register = async (req, res) => {

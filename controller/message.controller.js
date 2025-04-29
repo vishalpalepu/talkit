@@ -65,22 +65,70 @@ export const getAllMessages = async (req, res) => {
   }
 };
 
+// export const sendMessage = async (req, res) => {
+//   try {
+//     const { id: to } = req.params;
+//     /*console.log(to); working properly */
+//     /* error where the req.body is undefind*/
+//     const { text, image } = req.body;
+//     const from = req.user._id;
+
+//     let imageUrl;
+//     if (image) {
+//       const cloudinaryResponse = await cloudinary.uploader.upload(image);
+//       imageUrl = cloudinaryResponse.secure_url;
+//     }
+//     const { fromId, toId } = checkObjectIdAndConvert(from, to);
+
+//     const message = await Message.create({
+//       senderID: fromId,
+//       receiverID: toId,
+//       text: text,
+//       image: imageUrl,
+//     });
+
+//     await message.save();
+
+//     res
+//       .status(201)
+//       .json({ success: true, message: "message Sent successfully" });
+//   } catch (err) {
+//     if (process.env.NODE_ENV === "development") console.log(err);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal Server Error" });
+//   }
+// };
+
 export const sendMessage = async (req, res) => {
   try {
     const { id: to } = req.params;
-    const { text, image } = req.body;
+    /*console.log(to); working properly */
+    /* error where the req.body is undefind*/
+    const { text } = req.body;
+    const image = req.file;
     const from = req.user._id;
+
+    if (!text && !image) {
+      res.status(400).json({
+        success: false,
+        message: "No message or image is sent",
+      });
+    }
 
     let imageUrl;
     if (image) {
-      const cloudinaryResponse = await cloudinary.uploader.upload(image);
+      const fileStr = `data:${image.mimetype};base64,${image.buffer.toString(
+        "base64"
+      )}`;
+      const cloudinaryResponse = await cloudinary.uploader.upload(fileStr);
       imageUrl = cloudinaryResponse.secure_url;
     }
     const { fromId, toId } = checkObjectIdAndConvert(from, to);
 
     const message = await Message.create({
       senderID: fromId,
-      receriverId: toId,
+      receiverID: toId,
       text: text,
       image: imageUrl,
     });
