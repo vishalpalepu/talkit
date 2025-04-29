@@ -11,7 +11,7 @@ const messageSchema = mongoose.Schema({
     ref: "User",
     required: true,
   },
-  test: {
+  text: {
     type: String,
   },
   image: {
