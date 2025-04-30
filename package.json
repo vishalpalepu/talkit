@@ -37,6 +37,7 @@
     "nodemon": "^3.1.9",
     "path": "^0.12.7",
     "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "socketio": "^1.0.0"
   }
 }
