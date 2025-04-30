@@ -1,6 +1,6 @@
 import User from "../model/user.model.js";
 import Message from "../model/message.model.js";
-import { checkObjectIdAndConvert } from "../lib/utils.js";
+import { checkObjectIdAndConvert, uploadImage } from "../lib/utils.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const getAllUsers = async (req, res) => {
@@ -121,7 +121,7 @@ export const sendMessage = async (req, res) => {
       const fileStr = `data:${image.mimetype};base64,${image.buffer.toString(
         "base64"
       )}`;
-      const cloudinaryResponse = await cloudinary.uploader.upload(fileStr);
+      const cloudinaryResponse = await uploadImage(fileStr, "talkit/messages");
       imageUrl = cloudinaryResponse.secure_url;
     }
     const { fromId, toId } = checkObjectIdAndConvert(from, to);
@@ -135,9 +135,11 @@ export const sendMessage = async (req, res) => {
 
     await message.save();
 
-    res
-      .status(201)
-      .json({ success: true, message: "message Sent successfully" });
+    res.status(201).json({
+      success: true,
+      message: "message Sent successfully",
+      data: message,
+    });
   } catch (err) {
     if (process.env.NODE_ENV === "development") console.log(err);
     return res

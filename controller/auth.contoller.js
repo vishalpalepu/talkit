@@ -1,7 +1,11 @@
 import bcrypt from "bcryptjs";
 import User from "../model/user.model.js";
-import { generateToken } from "../lib/utils.js";
-import cloudinary from "../lib/cloudinary.js";
+import {
+  generateToken,
+  extractPublicId,
+  deleteImage,
+  uploadImage,
+} from "../lib/utils.js";
 import multer from "multer";
 
 const storage = multer.memoryStorage();
@@ -106,9 +110,13 @@ export const updateProfile = async (req, res) => {
     const fileStr = `data:${image.mimetype};base64,${image.buffer.toString(
       "base64"
     )}`;
-
-    const cloudinaryResponse = await cloudinary.uploader.upload(fileStr);
     const user = await User.findById(req.user._id);
+    if (user.profilePic !== "") {
+      const publicId = extractPublicId(user.profilePic);
+      deleteImage(publicId);
+    }
+    const cloudinaryResponse = await uploadImage(fileStr, "talkit/profile");
+
     user.profilePic = cloudinaryResponse.secure_url;
     await user.save();
     return res
