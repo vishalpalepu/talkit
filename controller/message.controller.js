@@ -1,29 +1,7 @@
 import User from "../model/user.model.js";
 import Message from "../model/message.model.js";
 import { checkObjectIdAndConvert, uploadImage } from "../lib/utils.js";
-
-// export const getAllUsers = async (req, res) => {
-//   try {
-//     const loggedInUser = req.user;
-//     const allFilteredUsers = await User.find({
-//       _id: { $ne: loggedInUser._id },
-//     }).select("-password");
-//     if (allFilteredUsers.length === 0) {
-//       return res.status(404).json({ success: false, message: "No User Found" });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "All user details retrieved ",
-//       allFilteredUsers,
-//     });
-//   } catch (err) {
-//     if (process.env.NODE_ENV === "development") console.log(err);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal Server Error" });
-//   }
-// };
+import { getReceiverSocketId, io } from "../lib/socket.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -35,28 +13,10 @@ export const getAllUsers = async (req, res) => {
       return res.status(404).json({ success: false, message: "No User Found" });
     }
 
-    const usersWithLastMessage = await Promise.all(
-      allFilteredUsers.map(async (user) => {
-        const lastMessage = await Message.findOne({
-          $or: [
-            { senderId: loggedInUser._id, receiverId: user._id },
-            { senderId: user._id, receiverId: loggedInUser._id },
-          ],
-        })
-          .sort({ createdAt: -1 }) // latest message
-          .limit(1);
-
-        return {
-          ...user.toObject(),
-          lastMessage: lastMessage || null,
-        };
-      })
-    );
-
     return res.status(200).json({
       success: true,
       message: "All user details retrieved ",
-      allFilteredUsers: usersWithLastMessage,
+      allFilteredUsers,
     });
   } catch (err) {
     if (process.env.NODE_ENV === "development") console.log(err);
@@ -65,6 +25,47 @@ export const getAllUsers = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+// export const getAllUsers = async (req, res) => {
+//   try {
+//     const loggedInUser = req.user;
+//     const allFilteredUsers = await User.find({
+//       _id: { $ne: loggedInUser._id },
+//     }).select("-password");
+//     if (allFilteredUsers.length === 0) {
+//       return res.status(404).json({ success: false, message: "No User Found" });
+//     }
+
+//     const usersWithLastMessage = await Promise.all(
+//       allFilteredUsers.map(async (user) => {
+//         const lastMessage = await Message.findOne({
+//           $or: [
+//             { senderId: loggedInUser._id, receiverId: user._id },
+//             { senderId: user._id, receiverId: loggedInUser._id },
+//           ],
+//         })
+//           .sort({ createdAt: -1 }) // latest message
+//           .limit(1);
+
+//         return {
+//           ...user.toObject(),
+//           lastMessage: lastMessage || null,
+//         };
+//       })
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "All user details retrieved ",
+//       allFilteredUsers: usersWithLastMessage,
+//     });
+//   } catch (err) {
+//     if (process.env.NODE_ENV === "development") console.log(err);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal Server Error" });
+//   }
+// };
 
 export const getAllMessages = async (req, res) => {
   try {
@@ -174,6 +175,12 @@ export const sendMessage = async (req, res) => {
     });
 
     await message.save();
+
+    const receiverSocketId = getReceiverSocketId(toId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", message);
+    }
 
     res.status(201).json({
       success: true,
