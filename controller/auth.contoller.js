@@ -111,13 +111,14 @@ export const updateProfile = async (req, res) => {
       "base64"
     )}`;
     const user = await User.findById(req.user._id);
+    let publicId = null;
     if (user.profilePic !== "") {
-      const publicId = extractPublicId(user.profilePic);
-      deleteImage(publicId);
+      publicId = extractPublicId(user.profilePic);
     }
     const cloudinaryResponse = await uploadImage(fileStr, "talkit/profile");
 
     user.profilePic = cloudinaryResponse.secure_url;
+    deleteImage(publicId);
     await user.save();
     return res
       .status(200)
