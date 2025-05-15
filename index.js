@@ -16,7 +16,7 @@ app.use(urlencoded({ extended: true }));
 app.use(json());
 app.use(
   cors({
-    origin: ["*", "http://localhost:3000","https://lucky-kitten-151f92.netlify.app"], // or wherever your frontend runs
+    origin: ["http://localhost:3000","https://talkit-three.vercel.app"], // or wherever your frontend runs
     credentials: true,
   })
 );
