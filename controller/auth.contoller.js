@@ -145,3 +145,36 @@ export const getUserProfile = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+export const verifyOtp = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    if (!otp || email) {
+      return res
+        .status(400)
+        .json({ success: false, message: "no OTP or Email" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (otp !== user.otp || Date.now() > user.otpExpires) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    return res
+      .status(200)
+      .json({ sucecss: true, message: "the email is verified " });
+  } catch (err) {
+    console.log(err);
+  }
+};

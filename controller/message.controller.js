@@ -1,7 +1,8 @@
 import User from "../model/user.model.js";
 import Message from "../model/message.model.js";
 import { checkObjectIdAndConvert, uploadImage } from "../lib/utils.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { getReceiverSocketId, io } from "../lib/socket.js"; // Import the chatbot API function
+import { getBotReplyGemini } from "../lib/chatbotAPI.js"; // Import the chatbot API function for Gemini
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -25,47 +26,6 @@ export const getAllUsers = async (req, res) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
-
-// export const getAllUsers = async (req, res) => {
-//   try {
-//     const loggedInUser = req.user;
-//     const allFilteredUsers = await User.find({
-//       _id: { $ne: loggedInUser._id },
-//     }).select("-password");
-//     if (allFilteredUsers.length === 0) {
-//       return res.status(404).json({ success: false, message: "No User Found" });
-//     }
-
-//     const usersWithLastMessage = await Promise.all(
-//       allFilteredUsers.map(async (user) => {
-//         const lastMessage = await Message.findOne({
-//           $or: [
-//             { senderId: loggedInUser._id, receiverId: user._id },
-//             { senderId: user._id, receiverId: loggedInUser._id },
-//           ],
-//         })
-//           .sort({ createdAt: -1 }) // latest message
-//           .limit(1);
-
-//         return {
-//           ...user.toObject(),
-//           lastMessage: lastMessage || null,
-//         };
-//       })
-//     );
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "All user details retrieved ",
-//       allFilteredUsers: usersWithLastMessage,
-//     });
-//   } catch (err) {
-//     if (process.env.NODE_ENV === "development") console.log(err);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal Server Error" });
-//   }
-// };
 
 export const getAllMessages = async (req, res) => {
   try {
@@ -111,12 +71,23 @@ export const getAllMessages = async (req, res) => {
 //     const { id: to } = req.params;
 //     /*console.log(to); working properly */
 //     /* error where the req.body is undefind*/
-//     const { text, image } = req.body;
+//     const { text } = req.body;
+//     const image = req.file;
 //     const from = req.user._id;
+
+//     if (!text && !image) {
+//       res.status(400).json({
+//         success: false,
+//         message: "No message or image is sent",
+//       });
+//     }
 
 //     let imageUrl;
 //     if (image) {
-//       const cloudinaryResponse = await cloudinary.uploader.upload(image);
+//       const fileStr = `data:${image.mimetype};base64,${image.buffer.toString(
+//         "base64"
+//       )}`;
+//       const cloudinaryResponse = await uploadImage(fileStr, "talkit/messages");
 //       imageUrl = cloudinaryResponse.secure_url;
 //     }
 //     const { fromId, toId } = checkObjectIdAndConvert(from, to);
@@ -130,9 +101,17 @@ export const getAllMessages = async (req, res) => {
 
 //     await message.save();
 
-//     res
-//       .status(201)
-//       .json({ success: true, message: "message Sent successfully" });
+//     const receiverSocketId = getReceiverSocketId(toId);
+
+//     if (receiverSocketId) {
+//       io.to(receiverSocketId).emit("newMessage", message);
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "message Sent successfully",
+//       data: message,
+//     });
 //   } catch (err) {
 //     if (process.env.NODE_ENV === "development") console.log(err);
 //     return res
@@ -141,17 +120,67 @@ export const getAllMessages = async (req, res) => {
 //   }
 // };
 
+//sucess but no bot reply
+// chatbotAPI.js
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
+
+const HF_API_TOKEN = process.env.HF_API_TOKEN; // Bearer token
+const HF_MODEL_ID =
+  process.env.HF_MODEL_ID || "mistralai/Mistral-7B-Instruct-v0.3"; // or your fallback model
+
+export const getBotReply = async (userMessage) => {
+  try {
+    const endpoint = `https://api-inference.huggingface.co/models/${HF_MODEL_ID}`;
+
+    const response = await axios.post(
+      endpoint,
+      {
+        inputs: userMessage,
+        parameters: {
+          max_new_tokens: 128,
+          temperature: 0.7,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${HF_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        params: {
+          wait_for_model: true, // Important for cold starts
+        },
+      }
+    );
+
+    const generated = response.data?.[0]?.generated_text;
+
+    if (!generated) {
+      return "Sorry, I couldn't generate a reply.";
+    }
+
+    return generated;
+  } catch (error) {
+    console.error(
+      "❌ Hugging Face API error:",
+      error?.response?.data || error.message
+    );
+    return "Sorry, I'm having trouble responding right now.";
+  }
+};
+
+// Example usage in your sendMessage function:
+
 export const sendMessage = async (req, res) => {
   try {
     const { id: to } = req.params;
-    /*console.log(to); working properly */
-    /* error where the req.body is undefind*/
-    const { text } = req.body;
+    const { text } = req.body; // User message
     const image = req.file;
     const from = req.user._id;
 
     if (!text && !image) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "No message or image is sent",
       });
@@ -165,30 +194,48 @@ export const sendMessage = async (req, res) => {
       const cloudinaryResponse = await uploadImage(fileStr, "talkit/messages");
       imageUrl = cloudinaryResponse.secure_url;
     }
-    const { fromId, toId } = checkObjectIdAndConvert(from, to);
 
+    // Save user message
     const message = await Message.create({
-      senderID: fromId,
-      receiverID: toId,
-      text: text,
+      senderID: from,
+      receiverID: to,
+      text,
       image: imageUrl,
     });
-
     await message.save();
 
-    const receiverSocketId = getReceiverSocketId(toId);
-
+    // Emit user message to the receiver
+    const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", message);
     }
 
+    // If the recipient is the bot, get a response from Hugging Face model
+    if (to === process.env.BOT_ID && text) {
+      console.log("i am bot");
+      const botReplyText = await getBotReplyGemini(text); // Get bot response from Hugging Face
+      const botMessage = await Message.create({
+        senderID: process.env.BOT_ID, // Bot ID
+        receiverID: from,
+        text: botReplyText,
+      });
+      await botMessage.save();
+
+      // Emit bot reply back to the user
+      const userSocketId = getReceiverSocketId(from);
+      if (userSocketId) {
+        io.to(userSocketId).emit("newMessage", botMessage);
+      }
+    }
+
+    // Send response to the HTTP request
     res.status(201).json({
       success: true,
-      message: "message Sent successfully",
+      message: "Message sent successfully",
       data: message,
     });
   } catch (err) {
-    if (process.env.NODE_ENV === "development") console.log(err);
+    console.error(err);
     return res
       .status(500)
       .json({ success: false, message: "Internal Server Error" });
