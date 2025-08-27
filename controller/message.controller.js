@@ -178,6 +178,8 @@ export const sendMessage = async (req, res) => {
     const { text } = req.body; // User message
     const image = req.file;
     const from = req.user._id;
+    console.log("From ID:", from);
+    console.log("To ID:", to);
 
     if (!text && !image) {
       return res.status(400).json({
@@ -203,7 +205,9 @@ export const sendMessage = async (req, res) => {
       image: imageUrl,
     });
     await message.save();
-
+    console.log("Recipient ID:", to);
+    console.log("Bot ID:", process.env.BOT_ID);
+    console.log("Text:", text);
     // Emit user message to the receiver
     const receiverSocketId = getReceiverSocketId(to);
     if (receiverSocketId) {
@@ -211,7 +215,10 @@ export const sendMessage = async (req, res) => {
     }
 
     // If the recipient is the bot, get a response from Hugging Face model
-    if (to === process.env.BOT_ID && text) {
+    if (
+      (to === process.env.BOT_ID && text) ||
+      (to.toString() === process.env.BOT_ID.toString() && text)
+    ) {
       console.log("i am bot");
       const botReplyText = await getBotReplyGemini(text); // Get bot response from Hugging Face
       const botMessage = await Message.create({
