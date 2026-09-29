@@ -1,7 +1,7 @@
 {
   "name": "talkit",
   "version": "1.0.0",
-  "description": " about communication to the entire world",
+  "description": "about communication to the entire world",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -26,20 +26,20 @@
   "homepage": "https://github.com/vishalpalepu/talkit#readme",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "axios": "^1.9.0",
+    "axios": "^1.12.0",
     "bcryptjs": "^3.0.2",
-    "cloudinary": "^2.6.0",
+    "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.13.1",
-    "multer": "^1.4.5-lts.2",
-    "nodemailer": "^6.10.1",
+    "mongoose": "^8.22.1",
+    "multer": "^2.0.0",
+    "nodemailer": "^7.0.7",
     "nodemon": "^3.1.9",
     "path": "^0.12.7",
-    "sequelize": "^6.37.7",
+    "sequelize": "^6.37.8",
     "socket.io": "^4.8.1",
     "socketio": "^1.0.0"
   }
